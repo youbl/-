@@ -4,6 +4,7 @@ import com.beinet.resourcecapture.captureTask.utils.FileHelper;
 import com.beinet.resourcecapture.captureTask.utils.HttpHelper;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -11,7 +12,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
  * https://网红精选.com
@@ -42,10 +42,33 @@ public class CaptureKanMeiNv extends CaptureBase {
     void downloadImgFromList(String url) throws IOException {
         do {
             String html = getAndSaveUrlContent(getHomePage() + url);
-            // 下载当前页图片
+
+            // 获取当前页的图片清单
+            List<String> imgUrls = getImgFromHtml(html);
+            // 存入txt文件，后面再慢慢下载
+            saveImgUrls(imgUrls, "txt/" + getFileName(url) + ".txt");
 
             url = getNextPage(html);
         } while (url.length() > 0);
+    }
+
+    List<String> getImgFromHtml(String html) {
+        List<String> ret = new ArrayList<>();
+
+        Pattern regex = Pattern.compile("<img\\s[^>]*src=\"([^\"]+\\.jpg)\"[^>]*/>");
+        Matcher matcher = regex.matcher(html);
+        while (matcher.find()) {
+            ret.add(matcher.group(1));
+        }
+        return ret;
+    }
+
+    void saveImgUrls(List<String> imgUrls, String imgListFile) throws IOException {
+        if (new File(imgListFile).exists()) {
+            return;
+        }
+        String str = String.join("\n", imgUrls);
+        FileHelper.saveFile(imgListFile, str);
     }
 
     List<String> getAllListUrl(String homeHtml) throws IOException {
@@ -58,7 +81,7 @@ public class CaptureKanMeiNv extends CaptureBase {
 
             nextPage = getNextPage(html);
         }
-        return allListUrl.keySet().stream().collect(Collectors.toList());
+        return new ArrayList<>(allListUrl.keySet());
     }
 
     /**

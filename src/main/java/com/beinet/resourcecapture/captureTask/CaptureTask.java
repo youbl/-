@@ -19,6 +19,11 @@ public class CaptureTask {
     @Scheduled(cron = "* * * * * *")
     void captureImg() {
         println("抓取开始。。。");
+        try {
+            Thread.sleep(50000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         captureService.begin();
     }
 
