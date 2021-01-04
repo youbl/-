@@ -19,6 +19,7 @@ public final class HttpHelper {
     private static String USER_AGENT = "Beinet Client 1.0";
     private static Config _defaultConfig;
     private static HashMap<String, String> _defaultHeader;
+    private static int defaultTimeout = 5000;  // 5秒
 
     // 收集每次响应的set-cookie
     private static final Map<String, HttpCookie> _cookies = new HashMap<>();
@@ -53,6 +54,22 @@ public final class HttpHelper {
             e.printStackTrace();
         }
 
+    }
+
+    /**
+     * 设置http请求的超时时间
+     * @param millisecond 毫秒
+     */
+    public static void setDefaultTimeout(int millisecond) {
+        defaultTimeout = millisecond;
+    }
+
+    /**
+     * 返回http请求的超时时间
+     * @return 毫秒
+     */
+    public static int getDefaultTimeout() {
+        return defaultTimeout;
     }
 
     /**
@@ -130,6 +147,8 @@ public final class HttpHelper {
             URL url = new URL(strUrl);
             connection = OpenConnection(url, config.getProxy());
             connection.setRequestMethod(method);
+            connection.setConnectTimeout(defaultTimeout);
+            connection.setReadTimeout(defaultTimeout);
 
             // todo: 用户名密码处理 request.Credentials = new NetworkCredential(userName, password);
 

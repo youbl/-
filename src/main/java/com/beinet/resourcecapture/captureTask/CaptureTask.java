@@ -25,6 +25,7 @@ public class CaptureTask {
             e.printStackTrace();
         }
         captureService.begin();
+        println("抓取结束。");
     }
 
 //    @Scheduled(cron = "* * * * * *")
