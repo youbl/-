@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.zip.GZIPInputStream;
 
-public final class HttpHelper {
+public final class DownHelper {
     private static String USER_AGENT = "Beinet Client 1.0";
     private static Config _defaultConfig;
     private static HashMap<String, String> _defaultHeader;
@@ -24,7 +24,7 @@ public final class HttpHelper {
     // 收集每次响应的set-cookie
     private static final Map<String, HttpCookie> _cookies = new HashMap<>();
 
-    private HttpHelper() {
+    private DownHelper() {
 
     }
 
@@ -74,14 +74,15 @@ public final class HttpHelper {
         return defaultTimeout;
     }
 
+
     /**
-     * GET获取url内容，并返回
+     * GET获取url二进制内容，并返回
      *
      * @param strUrl url
      * @return 返回的api内容或html
      */
-    public static String GetPage(String strUrl) {
-        return GetPage(strUrl, _defaultConfig);
+    public static byte[] GetBinary(String strUrl) {
+        return GetBinary(strUrl, _defaultConfig);
     }
 
     /**
@@ -91,25 +92,11 @@ public final class HttpHelper {
      * @param param  GET的参数
      * @return 返回的api内容或html
      */
-    public static String GetPage(String strUrl, String param) {
+    public static byte[] GetBinary(String strUrl, String param) {
         Config config = InitConfig();
         config.setMethod("GET");
         config.setParam(param);
-        return GetPage(strUrl, config);
-    }
-
-    /**
-     * POST获取url内容，并返回
-     *
-     * @param strUrl url
-     * @param param  POST的body
-     * @return 返回的api内容或html
-     */
-    public static String PostPage(String strUrl, String param) {
-        Config config = InitConfig();
-        config.setMethod("POST");
-        config.setParam(param);
-        return GetPage(strUrl, config);
+        return GetBinary(strUrl, config);
     }
 
     /**
@@ -119,12 +106,12 @@ public final class HttpHelper {
      * @param config 请求配置
      * @return 返回的api内容或html
      */
-    public static String GetPage(String strUrl, Config config) {
-        return GetPage(strUrl, config, null, 0);
+    public static byte[] GetBinary(String strUrl, Config config) {
+        return GetBinary(strUrl, config, null, 0);
     }
 
     // 主调方法
-    private static String GetPage(String strUrl, Config config, String originUrl, int deep) {
+    private static byte[] GetBinary(String strUrl, Config config, String originUrl, int deep) {
         if (config == null)
             config = _defaultConfig;
         else if (StringUtils.isEmpty(config.getEncoding()))
@@ -132,15 +119,9 @@ public final class HttpHelper {
         if (StringUtils.isEmpty(config.getUserAgent()))
             config.setUserAgent(USER_AGENT);
 
-        String method = config.getMethod();
-        if (StringUtils.isBlank(method))
-            method = "GET";
-        else
-            method = method.trim().toUpperCase();// HTTP协议要求大写
-        boolean isGet = method.equals("GET");
         String param = config.getParam();
 
-        strUrl = ProcessUrl(strUrl, isGet ? param : "");
+        strUrl = ProcessUrl(strUrl, param);
 
         HttpURLConnection connection = null;
         OutputStream os = null;
@@ -148,7 +129,7 @@ public final class HttpHelper {
         try {
             URL url = new URL(strUrl);
             connection = OpenConnection(url, config.getProxy());
-            connection.setRequestMethod(method);
+            connection.setRequestMethod("GET");
             connection.setConnectTimeout(defaultTimeout);
             connection.setReadTimeout(defaultTimeout);
 
@@ -159,31 +140,9 @@ public final class HttpHelper {
             if (config.getReadTimeout() > 0)
                 connection.setReadTimeout(config.getReadTimeout());
 
-            SetHeaders(connection, config, method);
+            SetHeaders(connection, config);
 
             // todo: 写cookie，设置proxy
-
-            StringBuilder sb = new StringBuilder();
-            if (config.isShowHeader()) {
-                sb.append(method).append(" ");
-                if (originUrl != null)
-                    sb.append(originUrl).append(" -> ");
-                sb.append(strUrl).append("\r\n请求头信息：\r\n");
-                // getRequestProperties调用必须在getOutputStream或connect之前
-                AppendHeader(sb, connection.getRequestProperties());
-            }
-
-            if (!isGet) {
-                connection.setDoOutput(true);
-                if (StringUtils.isNotBlank(param)) {
-                    // POST数据写入
-                    os = connection.getOutputStream();
-                    os.write(param.getBytes());
-                } else {
-                    // 无参数时写入Content-Length, 不能用 connection.setRequestProperty("Content-Length", "0");
-                    connection.setFixedLengthStreamingMode(0);
-                }
-            }
 
             connection.connect();
 
@@ -195,26 +154,30 @@ public final class HttpHelper {
                 return DoRedirect(location, strUrl, config, originUrl, deep);
             }
 
-            if (config.isShowHeader()) {
-                sb.append("响应头信息：").append(code).append(" ").
-                        append(connection.getResponseMessage()).append("\r\n");
-                AppendHeader(sb, connection.getHeaderFields());
-            }
-
             // 从响应里读取Cookie，并设置到默认_cookies里
             ParseCookie(strUrl, connection.getHeaderFields().get("Set-Cookie"));
 
-            sb.append(GetResponse(connection));
-
-            return sb.toString();
+            InputStream is = GetResponseStream(connection);
+            return inputStream2byte(is);
         } catch (Exception exp) {
             exp.printStackTrace();
-            return exp.getMessage();
+            return null;
         } finally {
             Close(connection);
             Close(os);
         }
     }
+
+    static byte[] inputStream2byte(InputStream inputStream) throws IOException {
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        byte[] buff = new byte[100];
+        int rc;
+        while ((rc = inputStream.read(buff, 0, 100)) > 0) {
+            byteArrayOutputStream.write(buff, 0, rc);
+        }
+        return byteArrayOutputStream.toByteArray();
+    }
+
 
     private static Config InitConfig() {
         Config config = new Config();
@@ -277,8 +240,7 @@ public final class HttpHelper {
         return ret;
     }
 
-    private static void SetHeaders(HttpURLConnection connection, Config config, String method) {
-        boolean contentTypeSetted = false;
+    private static void SetHeaders(HttpURLConnection connection, Config config) {
         boolean cookieSetted = false;
         Map<String, String> headers = config.getHeaders();
         if (headers != null) {
@@ -286,8 +248,6 @@ public final class HttpHelper {
                 String key = entry.getKey();
                 connection.setRequestProperty(key, entry.getValue());
 
-                if (StringUtils.equalsIgnoreCase("Content-Type", key))
-                    contentTypeSetted = true;
                 if (StringUtils.equalsIgnoreCase("Cookie", key))
                     cookieSetted = true;
             }
@@ -301,11 +261,6 @@ public final class HttpHelper {
             connection.setRequestProperty("Referer", config.getReferer());
         if (StringUtils.isNotEmpty(config.getUserAgent()))
             connection.setRequestProperty("User-Agent", config.getUserAgent());
-
-        // POST/PUT/DELETE 默认采用form data方式
-        if (!contentTypeSetted && !method.equals("GET"))
-            connection.setRequestProperty("Content-Type", "application/json");
-        //connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
 
         // 设置默认Cookie
         if (!cookieSetted) {
@@ -361,7 +316,7 @@ public final class HttpHelper {
         sb.append("\r\n");
     }
 
-    private static String DoRedirect(String redirectUrl, String currentUrl, Config config,
+    private static byte[] DoRedirect(String redirectUrl, String currentUrl, Config config,
                                      String originUrl, int deep) throws CloneNotSupportedException {
         Config redirectConfig = config.clone();
         // 跳转只允许GET
@@ -372,7 +327,7 @@ public final class HttpHelper {
         redirectUrl = GetRedirectUrl(redirectUrl, currentUrl);
         if (StringUtils.isNotEmpty(redirectUrl)) {
             originUrl = originUrl == null ? currentUrl : originUrl;
-            return GetPage(redirectUrl, redirectConfig, originUrl, deep + 1);
+            return GetBinary(redirectUrl, redirectConfig, originUrl, deep + 1);
         }
         return null;
     }
@@ -393,24 +348,6 @@ public final class HttpHelper {
             return url.substring(0, idx);
         }
         return url;
-    }
-
-    private static String GetResponse(HttpURLConnection connection) throws IOException {
-        InputStream is = null;
-        InputStreamReader reader = null;
-        try {
-            is = GetResponseStream(connection);
-
-            // 这里不用BufferReader.readLine 避免自己加换行
-            reader = new InputStreamReader(is, StandardCharsets.UTF_8);
-            StringBuilder sb = new StringBuilder();
-            int c;
-            while ((c = reader.read()) != -1)
-                sb.append((char) c);
-            return sb.toString();
-        } finally {
-            Close(reader, is);
-        }
     }
 
     private static InputStream GetResponseStream(HttpURLConnection connection) throws IOException {

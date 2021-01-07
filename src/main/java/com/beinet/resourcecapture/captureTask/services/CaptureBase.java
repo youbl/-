@@ -3,11 +3,13 @@ package com.beinet.resourcecapture.captureTask.services;
 import com.beinet.resourcecapture.captureTask.CaptureTask;
 import com.beinet.resourcecapture.captureTask.utils.FileHelper;
 import com.beinet.resourcecapture.captureTask.utils.HttpHelper;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
 import java.io.IOException;
 
+@Slf4j
 public abstract class CaptureBase implements CaptureInterface {
     /**
      * 当前项目的根目录
@@ -45,14 +47,27 @@ public abstract class CaptureBase implements CaptureInterface {
             return FileHelper.readFile(file);
         }
         try {
-            Thread.sleep(5000);
+            Thread.sleep(3000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
         String fileName = file.getAbsolutePath();
-        String html = HttpHelper.GetPage(url);
+        String html;
+        try {
+            html = HttpHelper.GetPage(url);
+        } catch (Exception exp2) {
+            try {
+                Thread.sleep(1000);
+                html = HttpHelper.GetPage(url);
+            } catch (Exception exp) {
+                log.error("Http请求出错：" + url + "\n" + exp);
+                return "";
+            }
+        }
         if (html.length() < 1000) {
-            throw new IOException("Http请求出错：" + html);
+            log.error("Http请求出错：" + url + "\n" + html);
+            return "";
+            // throw new IOException("Http请求出错：" + html);
         }
         FileHelper.saveFile(fileName, html);
         CaptureTask.println(url + " 已存入 " + fileName);
