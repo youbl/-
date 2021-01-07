@@ -23,7 +23,8 @@ public class CaptureXHerNet extends CaptureBase {
     @Override
     protected void analyze(String homeHtml) throws IOException {
         List<String> arrList = getAllListUrl(homeHtml);
-
+//        arrList = new ArrayList<>();
+//        arrList.add("https://xher.net/index.php?/category/298");
         for (String item : arrList) {
             downloadImgFromList(item);
         }
@@ -36,6 +37,13 @@ public class CaptureXHerNet extends CaptureBase {
             String item = url.replace(getHomePage() + "picture.php?/", "");
             item = item.substring(0, item.indexOf('/'));
             return "xher/" + category + "-" + item + ".html";
+        } else if (url.contains(getHomePage() + "index.php?/category/")) {
+            String item = url.replace(getHomePage() + "index.php?/category/", "");
+            int idx = item.indexOf("/");
+            if (idx < 0) {
+                return "xher/" + item + ".html";
+            }
+            return "xher/" + item.substring(0,idx) + "_" + category + ".html";
         }
         return "xher/" + category + ".html";
     }
