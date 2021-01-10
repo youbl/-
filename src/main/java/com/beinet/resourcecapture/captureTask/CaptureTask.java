@@ -1,9 +1,6 @@
 package com.beinet.resourcecapture.captureTask;
 
-import com.beinet.resourcecapture.captureTask.services.CaptureInterface;
-import com.beinet.resourcecapture.captureTask.services.CaptureKanMeiNv;
-import com.beinet.resourcecapture.captureTask.services.CaptureXHerNet;
-import com.beinet.resourcecapture.captureTask.services.DownImgs;
+import com.beinet.resourcecapture.captureTask.services.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.TaskScheduler;
@@ -35,20 +32,15 @@ public class CaptureTask {
     /**
      * 一个任务启动后，下一次一定要等当前任务完毕
      */
-   // @Scheduled(cron = "* * * * * *")
+    //@Scheduled(cron = "* * * * * *")
     @Async
     void captureImg() {
         println("抓取开始。。。");
-//        try {
-//            Thread.sleep(50000);
-//        } catch (InterruptedException e) {
-//            e.printStackTrace();
-//        }
         captureXHerNet.begin();
         println("抓取结束。");
     }
 
-    @Scheduled(cron = "* * * * * *")
+    //    @Scheduled(cron = "* * * * * *")
     @Async
     void downImg() throws IOException {
         println("下载开始。。。");
@@ -56,27 +48,23 @@ public class CaptureTask {
         println("下载结束。");
     }
 
-//    @Scheduled(cron = "* * * * * *")
-//    void test() {
-//        System.out.println("开始。。。");
-//        try {
-//            Thread.sleep(5000);
-//        } catch (InterruptedException e) {
-//            e.printStackTrace();
-//        }
-//        System.out.println("结束。。。");
-//    }
-//
-//    @Scheduled(cron = "* * * * * *")
-//    void test2() {
-//        System.out.println("开始2。。。");
-//        try {
-//            Thread.sleep(5000);
-//        } catch (InterruptedException e) {
-//            e.printStackTrace();
-//        }
-//        System.out.println("结束2。。。");
-//    }
+    boolean runed = false;
+
+    /**
+     * 一个任务启动后，下一次一定要等当前任务完毕
+     */
+    @Scheduled(cron = "* * * * * *")
+    @Async
+    void renameImg() throws IOException {
+        if (runed) {
+            println("重命名做过了。。。");
+            return;
+        }
+        runed = true;
+        println("重命名开始。。。");
+        new RenameImgs("d:\\mine\\JavaProject\\resourceCapture\\txt\\xher\\").execute();
+        println("重命名结束。");
+    }
 
     public static void println(String msg) {
         System.out.print(LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")));

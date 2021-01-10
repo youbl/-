@@ -24,7 +24,7 @@ public class CaptureXHerNet extends CaptureBase {
     protected void analyze(String homeHtml) throws IOException {
         List<String> arrList = getAllListUrl(homeHtml);
 //        arrList = new ArrayList<>();
-//        arrList.add("https://xher.net/index.php?/category/298");
+//        arrList.add("https://xher.net/index.php?/category/302");
         for (String item : arrList) {
             downloadImgFromList(item);
         }
@@ -43,7 +43,7 @@ public class CaptureXHerNet extends CaptureBase {
             if (idx < 0) {
                 return "xher/" + item + ".html";
             }
-            return "xher/" + item.substring(0,idx) + "_" + category + ".html";
+            return "xher/" + item.substring(0, idx) + "_" + category + ".html";
         }
         return "xher/" + category + ".html";
     }
@@ -59,6 +59,9 @@ public class CaptureXHerNet extends CaptureBase {
 
             url = getNextPage(html);
         } while (url.length() > 0);
+        if (imgUrls.isEmpty()) {
+            return;
+        }
 
         // 存入txt文件，后面再慢慢下载
         saveImgUrls(imgUrls, "txt/" + fileName + ".txt");
@@ -103,7 +106,7 @@ public class CaptureXHerNet extends CaptureBase {
 
     List<String> getAllListUrl(String homeHtml) throws IOException {
         List<String> ret = new ArrayList<>();
-        for (int i = 1; i <= 301; i++) {
+        for (int i = 1; i <= 302; i++) {
             ret.add("https://xher.net/index.php?/category/" + i);
         }
         return ret;
