@@ -18,8 +18,10 @@ import java.io.*;
 @Slf4j
 public class DownImgs {
     private String dir;
+    private int sleepSecond;
 
-    public DownImgs(String dir) {
+    public DownImgs(int sleepSecond, String dir) {
+        this.sleepSecond = sleepSecond;
         this.dir = dir;
     }
 
@@ -32,7 +34,7 @@ public class DownImgs {
             return;
         }
         for (File file : dirObj.listFiles()) {
-            if (!file.isFile() || file.length() <= 0) {
+            if (!file.isFile() || file.length() <= 0 || file.getName().equalsIgnoreCase("all.txt")) {
                 continue;
             }
             String str = FileHelper.readFile(file);
@@ -49,7 +51,7 @@ public class DownImgs {
     }
 
     private void downFile(String url, File file) throws IOException {
-        String subdir = file.getAbsolutePath().replace(".html.txt", "");
+        String subdir = file.getAbsolutePath().replace(".html.txt", "").replace(".txt", "");
         File subdirObj = new File(subdir);
         if (!subdirObj.exists()) {
             subdirObj.mkdirs();
@@ -67,7 +69,8 @@ public class DownImgs {
         }
         log.info(url + " saved to " + imgName);
         try {
-            Thread.sleep(2000);
+            if (sleepSecond > 0)
+                Thread.sleep(sleepSecond * 1000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }

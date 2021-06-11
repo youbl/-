@@ -31,20 +31,21 @@ public class CaptureTask {
 
     /**
      * 一个任务启动后，下一次一定要等当前任务完毕
+     * XHer.Net 站点已经废弃，此方法没用了
      */
-    //@Scheduled(cron = "* * * * * *")
-    @Async
-    void captureImg() {
-        println("抓取开始。。。");
-        captureXHerNet.begin();
-        println("抓取结束。");
-    }
+//    @Async
+//    void captureImg() {
+//        println("抓取开始。。。");
+//        captureXHerNet.begin();
+//        println("抓取结束。");
+//    }
 
-    //    @Scheduled(cron = "* * * * * *")
+    @Scheduled(cron = "* * * * * *")
     @Async
     void downImg() throws IOException {
         println("下载开始。。。");
-        new DownImgs("d:\\mine\\JavaProject\\resourceCapture\\txt\\xher\\").execute();
+        DownImgs down = new DownImgs(0, "d:\\mine\\meie\\");
+        down.execute();
         println("下载结束。");
     }
 
@@ -53,7 +54,7 @@ public class CaptureTask {
     /**
      * 一个任务启动后，下一次一定要等当前任务完毕
      */
-    @Scheduled(cron = "* * * * * *")
+//    @Scheduled(cron = "* * * * * *")
     @Async
     void renameImg() throws IOException {
         if (runed) {

@@ -16,7 +16,7 @@ import java.util.Map;
 import java.util.zip.GZIPInputStream;
 
 public final class DownHelper {
-    private static String USER_AGENT = "Beinet Client 1.0";
+    private static String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36";//""Beinet Client 1.0";
     private static Config _defaultConfig;
     private static HashMap<String, String> _defaultHeader;
     private static int defaultTimeout = 5000;  // 5秒
@@ -188,7 +188,7 @@ public final class DownHelper {
 
         // 这2行是测试代码，要记得注释
 //        config.setShowHeader(true);
-        config.setProxy("127.0.0.1:1080:socks");
+        //config.setProxy("127.0.0.1:1080:socks");
 
         return config;
     }
